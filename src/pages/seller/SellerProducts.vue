@@ -5,14 +5,14 @@
         <q-btn flat round dense icon="arrow_back" color="white" class="bg-dark-btn" @click="$router.back()" />
         <h5 class="text-white q-my-none text-weight-bold">Управление товарами</h5>
       </div>
-      <q-btn label="Создать товар" color="indigo-4" icon="add" class="create-btn text-weight-bold" @click="onSubmit" :loading="loading" />
+      <q-btn label="Создать товар" color="grey-9" text-color="white" icon="add" class="create-btn text-weight-bold" @click="onSubmit" :loading="loading" />
     </div>
 
     <div class="row q-col-gutter-xl">
       <div class="col-12 col-lg-5">
         <div class="section-title q-mb-md">Добавить новую культуру</div>
         <div class="row q-col-gutter-x-md q-col-gutter-y-lg">
-          
+
           <div class="col-12">
             <div class="field-label">Фотография урожая</div>
             <q-file v-model="form.image" dark borderless dense class="custom-field file-field" accept="image/*" label="Выбрать фото" @update:model-value="onImageChange" />
@@ -22,47 +22,27 @@
           </div>
 
           <div class="col-6">
-            <div class="field-label">Область</div>
-            <q-select v-model="form.region_id" :options="regions" option-value="id" option-label="name" emit-value map-options dark borderless dense class="custom-field" @update:model-value="loadDistricts" />
-          </div>
-
-          <div class="col-6">
-            <div class="field-label">Район / Г.О.</div>
-            <q-select v-model="form.district_id" :options="districts" option-value="id" option-label="name" emit-value map-options :disable="!form.region_id" dark borderless dense class="custom-field" @update:model-value="loadCities" />
-          </div>
-
-          <div class="col-6">
-            <div class="field-label">Город / Село</div>
-            <q-select v-model="form.city_id" :options="cities" option-value="id" option-label="name" emit-value map-options :disable="!form.district_id" dark borderless dense class="custom-field" />
-          </div>
-
-          <div class="col-6">
-            <div class="field-label">Местоположение (Адрес)</div>
-            <q-input v-model="form.address" dark borderless dense class="custom-field" placeholder="Улица, трасса" />
-          </div>
-          
-          <div class="col-6">
-            <div class="field-label">Семейство</div>
+            <div class="field-label">Семейство *</div>
             <q-select v-model="form.crop_family_id" :options="families" option-value="id" option-label="name" emit-value map-options dark borderless dense class="custom-field" @update:model-value="loadCrops" />
           </div>
 
           <div class="col-6">
-            <div class="field-label">Культура</div>
-            <q-select v-model="form.crop_id" :options="crops" option-value="id" option-label="name" emit-value map-options :disable="!form.crop_family_id" dark borderless dense class="custom-field" />
+            <div class="field-label">Культура *</div>
+            <q-select v-model="form.crop_id" :options="crops" option-value="id" option-label="name" emit-value map-options :disable="!form.crop_family_id" dark borderless dense class="custom-field" @update:model-value="generateTitle" />
           </div>
 
           <div class="col-6">
             <div class="field-label">Сорт</div>
-            <q-input v-model="form.variety" dark borderless dense class="custom-field" />
+            <q-input v-model="form.variety" dark borderless dense class="custom-field" placeholder="Например: Яровая" @update:model-value="generateTitle" />
           </div>
 
           <div class="col-6">
-            <div class="field-label">Фракция</div>
-            <q-select v-model="form.fraction" :options="['Крупная', 'Средняя', 'Мелкая']" dark borderless dense class="custom-field" />
+            <div class="field-label">Наименование товара *</div>
+            <q-input v-model="form.title" dark borderless dense class="custom-field" placeholder="Придумайте название" />
           </div>
 
           <div class="col-6">
-            <div class="field-label">Объем</div>
+            <div class="field-label">Объем *</div>
             <div class="row no-wrap">
               <q-input v-model.number="form.quantity" type="number" dark borderless dense class="custom-field full-width q-mr-xs" />
               <q-select v-model="form.unit" :options="[{label: 'т', value: 'ton'}, {label: 'кг', value: 'kg'}]" emit-value map-options dark borderless dense class="custom-field" style="width: 80px" />
@@ -70,9 +50,33 @@
           </div>
 
           <div class="col-6">
-            <div class="field-label">Цена (₸)</div>
-            <q-input v-model.number="form.price" type="number" dark borderless dense class="custom-field" />
+            <div class="field-label">Цена (₸) *</div>
+            <div class="row no-wrap">
+              <q-input v-model.number="form.price" type="number" dark borderless dense class="custom-field full-width q-mr-xs" />
+              <q-select v-model="form.price_unit" :options="[{label: 'за т', value: 'ton'}, {label: 'за кг', value: 'kg'}]" emit-value map-options dark borderless dense class="custom-field" style="width: 100px" />
+            </div>
           </div>
+
+          <div class="col-6">
+            <div class="field-label">Область *</div>
+            <q-select v-model="form.region_id" :options="regions" option-value="id" option-label="name" emit-value map-options dark borderless dense class="custom-field" @update:model-value="loadDistricts" />
+          </div>
+
+          <div class="col-6">
+            <div class="field-label">Районы / Г.О. *</div>
+            <q-select v-model="form.district_id" :options="districts" option-value="id" option-label="name" emit-value map-options :disable="!form.region_id" dark borderless dense class="custom-field" @update:model-value="loadCities" />
+          </div>
+
+          <div class="col-6">
+            <div class="field-label">Город / Населенный пункт</div>
+            <q-select v-model="form.city_id" :options="cities" option-value="id" option-label="name" emit-value map-options :disable="!form.district_id" dark borderless dense class="custom-field" />
+          </div>
+
+          <div class="col-6">
+            <div class="field-label">Местоположение (Адрес)</div>
+            <q-input v-model="form.address" dark borderless dense class="custom-field" placeholder="Улица, трасса, ориентир" />
+          </div>
+
         </div>
       </div>
 
@@ -81,13 +85,13 @@
         <q-table dark flat :rows="myProducts" :columns="columns" row-key="id" class="custom-table" :loading="tableLoading">
           <template v-slot:body-cell-status="props">
             <q-td :props="props">
-              <q-badge :color="props.row.status === 'published' ? 'green-5' : 'grey-7'" :label="props.row.status === 'published' ? 'В продаже' : 'Черновик'" />
+              <q-badge :color="props.row.status === 'published' ? 'grey-3' : 'grey-8'" :text-color="props.row.status === 'published' ? 'black' : 'white'" :label="props.row.status === 'published' ? 'В продаже' : 'Черновик'" />
             </q-td>
           </template>
           <template v-slot:body-cell-actions="props">
             <q-td :props="props">
-              <q-btn v-if="props.row.status === 'draft'" size="sm" color="green-6" label="Опубликовать" @click="toggleStatus(props.row)" unelevated />
-              <q-btn v-else size="sm" color="orange-6" label="Снять с продажи" @click="toggleStatus(props.row)" outline />
+              <q-btn v-if="props.row.status === 'draft'" size="sm" color="white" text-color="black" label="Опубликовать" @click="toggleStatus(props.row)" unelevated />
+              <q-btn v-else size="sm" color="grey-6" label="Снять с продажи" @click="toggleStatus(props.row)" outline />
             </q-td>
           </template>
         </q-table>
@@ -115,21 +119,31 @@ const imagePreview = ref(null)
 
 const form = ref({
   image: null, region_id: null, district_id: null, city_id: null, address: '',
-  crop_family_id: null, crop_id: null, variety: '', fraction: 'Средняя',
-  quantity: null, unit: 'ton', price: null
+  crop_family_id: null, crop_id: null, variety: '', title: '',
+  quantity: null, unit: 'ton', price: null, price_unit: 'ton'
 })
 
 const columns = [
   { name: 'title', align: 'left', label: 'Описание', field: 'title' },
-  { name: 'volume', align: 'left', label: 'Объем', field: row => `${row.stock || 0} ${row.unit || 'kg'}` },
+  { name: 'volume', align: 'left', label: 'Объем', field: row => `${row.stock || 0} ${row.unit === 'ton' ? 'т' : 'кг'}` },
   { name: 'price', align: 'left', label: 'Цена', field: row => `${row.price || 0} ₸` },
   { name: 'status', align: 'center', label: 'Статус', field: 'status' },
   { name: 'actions', align: 'center', label: 'Действия', field: 'actions' }
 ]
 
 const onImageChange = (val) => {
-  if (val) { imagePreview.value = URL.createObjectURL(val) } 
+  if (val) { imagePreview.value = URL.createObjectURL(val) }
   else { imagePreview.value = null }
+}
+
+// Автогенерация названия товара на основе Культуры и Сорта
+const generateTitle = () => {
+  const selectedCrop = crops.value.find(c => c.id === form.value.crop_id)
+  let newTitle = selectedCrop ? selectedCrop.name : ''
+  if (form.value.variety) {
+    newTitle += ` (${form.value.variety})`
+  }
+  form.value.title = newTitle
 }
 
 const loadInitialDictionaries = async () => {
@@ -170,7 +184,7 @@ const loadCrops = async (familyId) => {
 const fetchMyProducts = async () => {
   tableLoading.value = true
   try {
-    const res = await api.get('/products')
+    const res = await api.get('/my/products')
     myProducts.value = res.data.products || []
   } catch (e) { console.error('Ошибка загрузки', e) }
   finally { tableLoading.value = false }
@@ -208,19 +222,38 @@ const onSubmit = async () => {
       base64Image = await fileToBase64(form.value.image)
     }
 
-    const payload = { 
-      ...form.value, stock: form.value.quantity, 
-      title: `${form.value.variety} (${form.value.fraction})`, image: base64Image 
+    const payload = {
+      region_id: form.value.region_id || null,
+      district_id: form.value.district_id || null,
+      city_id: form.value.city_id || null,
+      address: form.value.address || "",
+      crop_family_id: form.value.crop_family_id || null,
+      crop_id: form.value.crop_id || null,
+      variety: form.value.variety || "",
+      fraction: "", // Фракцию убрали, шлем пустым
+      stock: Number(form.value.quantity) || 0,
+      unit: form.value.unit || "ton",
+      price: Number(form.value.price) || 0,
+      title: form.value.title || 'Новый урожай',
+      image: base64Image
     }
 
     await api.post('/products', payload)
     $q.notify({ type: 'positive', message: 'Готово! Товар сохранен.' })
-    
-    form.value.quantity = null; form.value.price = null; form.value.variety = '';
-    form.value.image = null; imagePreview.value = null;
+
+    form.value.quantity = null; form.value.price = null; form.value.variety = ''; 
+    form.value.title = ''; form.value.image = null; imagePreview.value = null;
 
     fetchMyProducts()
-  } catch (e) { $q.notify({ type: 'negative', message: 'Ошибка при сохранении' }) } 
+  } catch (e) {
+    const errorData = e.response?.data
+    let errorMsg = 'Проверьте, все ли поля заполнены.'
+    if (errorData) {
+      if (typeof errorData === 'string') errorMsg = errorData
+      else if (errorData.error) errorMsg = errorData.error
+    }
+    $q.notify({ type: 'negative', message: `Ошибка 400: ${errorMsg}`, timeout: 6000, position: 'top' })
+  }
   finally { loading.value = false }
 }
 
@@ -232,8 +265,9 @@ onMounted(() => {
 
 <style scoped>
 .products-page { background-color: #050505; min-height: 100vh; color: white; }
-.section-title { font-size: 18px; font-weight: 700; color: #7b61ff; }
+.section-title { font-size: 18px; font-weight: 700; color: #ffffff; }
 .field-label { font-size: 12px; font-weight: 700; margin-bottom: 6px; opacity: 0.8; }
-:deep(.custom-field .q-field__control) { background-color: #1a1a1c !important; border-radius: 12px !important; }
-.custom-table { background-color: #111112 !important; border-radius: 16px; }
+:deep(.custom-field .q-field__control) { background-color: #1a1a1c !important; border-radius: 12px !important; border: 1px solid #222; }
+:deep(.custom-field.q-field--focused .q-field__control) { border-color: #555; }
+.custom-table { background-color: #111112 !important; border-radius: 16px; border: 1px solid #222; }
 </style>
