@@ -107,21 +107,28 @@ const onSubmit = async () => {
     }
 
     const res = await api.post(url, payload)
-    
-    // Сохраняем токен (учитываем, что бэкенд шлет access_token)
+
+    // 1. Сохраняем токен
     localStorage.setItem('token', res.data.access_token)
-    
-    // Сохраняем роль
+
+    // 2. Сохраняем роль (унифицируем ключи: role и user_role)
     const userRole = res.data.role || form.value.role || 'farmer'
+    localStorage.setItem('role', userRole)
     localStorage.setItem('user_role', userRole)
 
-    $q.notify({ type: 'positive', message: 'Авторизация успешна' })
+    // 3. СОХРАНЯЕМ ИМЯ (Берем из ответа бэкенда)
+    const userName = res.data.name || form.value.name || 'Пользователь'
+    localStorage.setItem('name', userName)
+    localStorage.setItem('uid', res.data.id || '')
 
-    // Правильный SPA-переход без перезагрузки страницы
-    if (userRole === 'farmer') {
+    $q.notify({ type: 'positive', message: `Привет, ${userName}!` })
+
+    if (userRole === 'farmer' || userRole === 'seller') {
       router.push('/seller')
     } else if (userRole.includes('buyer')) {
       router.push('/buyer')
+    } else if (userRole === 'admin') {
+      router.push('/admin')
     } else {
       router.push('/')
     }

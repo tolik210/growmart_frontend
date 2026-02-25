@@ -2,19 +2,6 @@
   <div class="welcome-container">
     <main class="main-content">
 
-      <section class="search-section">
-        <div class="search-box">
-          <input
-            type="text"
-            v-model="searchQuery"
-            placeholder="Поиск товаров, услуг и сервисов"
-            class="search-input"
-            @keyup.enter="handleSearch"
-          />
-          <button class="search-btn" @click="handleSearch">Найти</button>
-        </div>
-      </section>
-
       <section class="services-section">
         <div class="services-grid">
           <div
@@ -127,11 +114,11 @@ const services = ref([
   { id: 1, name: 'АПК', isLogo: true, route: '/catalog' },
   { id: 2, name: 'Мой Банк', icon: '🏦', route: '/my-bank' },
   { id: 3, name: 'Аналитика', icon: '📊', route: '/analytics' },
-  { id: 4, name: 'Gosagro.kz', isImage: true, imagePath: '/gosagro.png', route: '/subsidies' },
-  { id: 5, name: 'Брокеры', icon: '📈', route: '/brokers' },
+  { id: 4, name: 'Gosagro.kz', isImage: true, imagePath: '/gosagro.jpeg', route: '/subsidies' },
+  { id: 5, name: 'Гос.поддержка', icon: '📈', route: '/brokers' },
   { id: 6, name: 'Логистика', icon: '🚚', route: '/logistics' },
   { id: 7, name: 'Финансовые институты', icon: '💼', route: '/finance' },
-  { id: 8, name: 'Агрострахования', icon: '🛡️', route: '/insurance' },
+  { id: 8, name: 'Агрострахование', icon: '🛡️', route: '/insurance' },
 ])
 
 onMounted(() => {

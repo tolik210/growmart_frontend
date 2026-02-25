@@ -1,125 +1,120 @@
 <template>
-  <q-page class="orders-page q-pa-lg">
-    <div class="row items-center q-mb-xl">
-      <q-btn flat round dense icon="arrow_back" color="white" class="bg-dark-btn q-mr-md" @click="$router.push('/seller')" />
-      <h4 class="text-white q-my-none text-weight-bold">Входящие заказы</h4>
-    </div>
+  <q-page class="q-pa-lg">
+    <h4 class="text-white q-mt-none q-mb-lg text-weight-bold">Продажи (Заказы)</h4>
+    <q-table :rows="orders" :columns="columns" dark flat bordered class="bg-dark-table">
+      
+      <template v-slot:body-cell-status="props">
+        <q-td :props="props">
+          <q-badge v-if="props.row.status === 'pending'" color="grey" label="Ждем покупателя" />
+          <q-badge v-if="props.row.status === 'buyer_signed'" color="orange" label="Требуется ваша подпись" />
+          <q-badge v-if="props.row.status === 'processing'" color="blue" label="В работе" />
+          <q-badge v-if="props.row.status === 'completed'" color="green" label="Завершен" />
+        </q-td>
+      </template>
 
-    <div v-if="loading" class="flex flex-center q-pa-xl">
-      <q-spinner color="blue-5" size="3em" />
-    </div>
+      <template v-slot:body-cell-actions="props">
+        <q-td :props="props" class="q-gutter-sm">
+          <q-btn v-if="props.row.status === 'buyer_signed'" size="sm" color="blue-6" label="Подписать ЭЦП" @click="sign(props.row.id)" />
+          <q-btn v-if="props.row.status === 'processing'" size="sm" color="green-6" label="Отгрузить товар" @click="complete(props.row.id)" />
+          <q-btn flat round color="blue-4" icon="chat" @click="openChat(props.row.id)">
+            <q-tooltip>Чат с покупателем</q-tooltip>
+          </q-btn>
+        </q-td>
+      </template>
+    </q-table>
 
-    <div v-else-if="orders.length === 0" class="text-center q-pa-xl">
-      <q-icon name="inbox" size="6em" color="grey-8" />
-      <h5 class="text-grey-5 q-mt-md">У вас пока нет новых заказов</h5>
-    </div>
-
-    <div v-else class="row q-col-gutter-lg">
-      <div class="col-12 col-md-8 offset-md-2" v-for="order in orders" :key="order.id">
-        <q-card class="order-card" flat bordered>
-          <q-card-section class="row justify-between items-center bg-dark-header q-pa-md">
-            <div>
-              <div class="text-grey-5 text-subtitle2 q-mb-xs">Заказ № {{ order.id.split('-')[0] }}...</div>
-              <div class="text-white text-h6">{{ order.date }}</div>
-            </div>
-            <div class="text-right">
-              <q-badge :color="statusColor(order.status)" class="q-pa-sm text-subtitle2 q-mb-xs text-weight-bold">
-                {{ statusText(order.status) }}
-              </q-badge>
-              <div class="text-blue-4 text-h5 text-weight-bold">{{ order.total_amount }} ₸</div>
-            </div>
-          </q-card-section>
-          
-          <q-separator dark />
-          
-          <q-card-section class="q-pa-md">
-            <div class="text-grey-5 q-mb-md text-weight-bold text-subtitle1">Заказанные товары:</div>
-            <div v-for="(item, idx) in order.items" :key="idx" class="row items-center no-wrap q-mb-md q-pl-md" style="border-left: 3px solid #333;">
-              <q-avatar rounded size="50px" class="q-mr-md bg-grey-9">
-                <img v-if="item.image" :src="'https://v1.growmart.ltd/uploads/' + item.image.split('/').pop()" />
-                <q-icon v-else name="image" color="grey-6" />
-              </q-avatar>
-              <div class="col">
-                <div class="text-white text-subtitle1 text-weight-bold">{{ item.title }}</div>
-              </div>
-              <div class="col-auto text-white text-weight-bold text-subtitle1">
-                {{ item.order_quantity }} {{ item.unit === 'ton' ? 'т' : 'кг' }}
-              </div>
-            </div>
-          </q-card-section>
-
-          <q-card-actions class="q-pa-md bg-dark-header justify-end">
-            <div v-if="order.status === 'pending'" class="text-orange-5 text-weight-bold row items-center">
-              <q-icon name="schedule" size="sm" class="q-mr-sm"/> Ожидает подписания договора покупателем
-            </div>
-            
-            <div v-else-if="order.status === 'processing'" class="row items-center q-gutter-md">
-              <div class="text-green-4 text-weight-bold"><q-icon name="verified" size="sm" /> Договор подписан!</div>
-              <q-btn color="blue-6" icon="local_shipping" label="Отгрузить товар (Завершить)" class="text-weight-bold" @click="completeOrder(order.id)" :loading="actionLoading === order.id" />
-            </div>
-
-            <div v-else-if="order.status === 'completed'" class="text-grey-5 text-weight-bold row items-center">
-              <q-icon name="done_all" size="sm" class="q-mr-sm"/> Сделка успешно завершена
-            </div>
-          </q-card-actions>
-        </q-card>
-      </div>
-    </div>
+    <q-dialog v-model="chatOpen" position="right" maximized>
+      <q-card style="width: 400px; max-width: 100vw; background-color: #0a0a0c; border-left: 1px solid #1e3a8a;" class="column text-white">
+        <q-card-section class="row items-center bg-dark-header">
+          <q-icon name="chat" size="sm" color="blue-4" class="q-mr-sm" />
+          <div class="text-h6 text-weight-bold">Чат сделки</div>
+          <q-space />
+          <q-btn icon="close" flat round dense color="grey-5" v-close-popup />
+        </q-card-section>
+        <q-separator dark />
+        <q-card-section class="col scroll" ref="chatScroll">
+          <div v-if="messages.length === 0" class="text-center text-grey-6 q-mt-xl">Нет сообщений...</div>
+          <q-chat-message v-for="m in messages" :key="m.id" :name="m.sender_id === myUid ? 'Вы' : m.sender_name" :text="[m.message]" :stamp="m.time" :sent="m.sender_id === myUid" :bg-color="m.sender_id === myUid ? 'blue-8' : 'grey-9'" text-color="white" />
+        </q-card-section>
+        <q-separator dark />
+        <q-card-actions class="bg-dark-header q-pa-sm row no-wrap">
+          <q-input v-model="newMessage" dark dense outlined placeholder="Сообщение..." class="col q-mr-sm" @keyup.enter="sendMsg" />
+          <q-btn round color="blue-6" icon="send" @click="sendMsg" :disable="!newMessage" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
   </q-page>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, nextTick } from 'vue'
 import { useQuasar } from 'quasar'
+import { useRouter } from 'vue-router'
 import api from 'src/services/api'
 
 const $q = useQuasar()
-const loading = ref(true)
-const actionLoading = ref(null)
+const router = useRouter()
 const orders = ref([])
+const columns = [
+  { name: 'date', label: 'Дата', field: 'date', align: 'left' },
+  { name: 'total_amount', label: 'Сумма (₸)', field: 'total_amount', align: 'left' },
+  { name: 'status', label: 'Статус', field: 'status', align: 'left' },
+  { name: 'actions', label: 'Действия', align: 'center' }
+]
+
+const chatOpen = ref(false)
+const messages = ref([])
+const newMessage = ref('')
+const activeOrderId = ref(null)
+const myUid = localStorage.getItem('uid')
+const chatScroll = ref(null)
+let chatInterval = null
 
 const fetchOrders = async () => {
+  const res = await api.get('/seller/orders')
+  orders.value = res.data.orders || []
+}
+
+const sign = (id) => {
+  router.push(`/order/${id}/sign`)
+}
+
+const complete = async (id) => {
   try {
-    const res = await api.get('/seller/orders')
-    orders.value = res.data.orders || []
-  } catch (e) {
-    console.error('Ошибка:', e)
-  } finally {
-    loading.value = false
+    await api.post(`/orders/${id}/complete`)
+    $q.notify({ type: 'positive', message: 'Заказ успешно завершен и отгружен!' })
+    fetchOrders()
+  } catch(e) {
+    $q.notify({ type: 'negative', message: 'Ошибка при отгрузке' })
   }
 }
 
-const statusColor = (status) => {
-  const map = { 'pending': 'orange-8', 'processing': 'blue-8', 'completed': 'green-8', 'cancelled': 'red-8' }
-  return map[status] || 'grey-8'
+const openChat = async (orderId) => {
+  activeOrderId.value = orderId
+  chatOpen.value = true
+  await loadMessages()
+  if (chatInterval) clearInterval(chatInterval)
+  chatInterval = setInterval(loadMessages, 5000)
 }
 
-const statusText = (status) => {
-  const map = { 'pending': 'Ждем покупателя', 'processing': 'Нужно собрать', 'completed': 'Отгружен', 'cancelled': 'Отменен' }
-  return map[status] || status
+const loadMessages = async () => {
+  if (!activeOrderId.value || !chatOpen.value) return
+  const res = await api.get(`/orders/${activeOrderId.value}/chat`)
+  messages.value = res.data.messages || []
+  nextTick(() => { if (chatScroll.value) chatScroll.value.$el.scrollTop = chatScroll.value.$el.scrollHeight })
 }
 
-const completeOrder = async (orderId) => {
-  actionLoading.value = orderId
-  try {
-    await api.post(`/orders/${orderId}/complete`)
-    $q.notify({ type: 'positive', message: 'Сделка завершена! Товар отгружен.', icon: 'done_all', position: 'top' })
-    await fetchOrders()
-  } catch (e) {
-    $q.notify({ type: 'negative', message: 'Ошибка при завершении заказа', position: 'top' })
-  } finally {
-    actionLoading.value = null
-  }
+const sendMsg = async () => {
+  if (!newMessage.value.trim()) return
+  await api.post(`/orders/${activeOrderId.value}/chat`, { message: newMessage.value })
+  newMessage.value = ''
+  await loadMessages()
 }
 
-onMounted(() => {
-  fetchOrders()
-})
+onMounted(fetchOrders)
 </script>
 
 <style scoped>
-.orders-page { background-color: #050505; min-height: 100vh; }
-.bg-dark-btn { background-color: #1a1a1c !important; border: 1px solid #333; }
-.order-card { background-color: #111112; border-color: #222; border-radius: 16px; overflow: hidden; }
+.bg-dark-table { background-color: #111112; border-radius: 12px; }
 .bg-dark-header { background-color: #161618; }
 </style>

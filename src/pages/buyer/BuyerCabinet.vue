@@ -29,7 +29,7 @@
           </div>
 
           <div class="col-12 col-sm-6 col-md-4">
-            <q-card class="menu-card cursor-pointer" flat bordered @click="comingSoon">
+            <q-card class="menu-card cursor-pointer" flat bordered @click="$router.push('/profile')">
               <q-card-section class="column items-center q-pa-xl text-center">
                 <q-icon name="manage_accounts" size="4em" color="grey-7" class="q-mb-md" />
                 <div class="text-h6 text-white text-weight-bold">Профиль</div>
